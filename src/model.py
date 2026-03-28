@@ -15,7 +15,9 @@ def conv3x3(in_channels, out_channels, stride=1):
 class ResidualBlock(nn.Module):
     """Basic residual block with optional downsampling."""
 
-    def __init__(self, in_channels, out_channels, stride=1, downsample=None, dropout=0.1):
+    def __init__(
+        self, in_channels, out_channels, stride=1, downsample=None, dropout=0.1
+    ):
         super(ResidualBlock, self).__init__()
         self.conv1 = conv3x3(in_channels, out_channels, stride)
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -58,9 +60,11 @@ class BidirectionalLSTM(nn.Module):
         # x: (batch, time_steps, features)
         output, (h_n, _) = self.lstm(x)
         # h_n: (num_layers * 2, batch, hidden_size) – concatenate last forward & backward
-        forward_last = h_n[-2]    # last layer, forward direction
-        backward_last = h_n[-1]   # last layer, backward direction
-        return torch.cat([forward_last, backward_last], dim=-1)  # (batch, hidden_size*2)
+        forward_last = h_n[-2]  # last layer, forward direction
+        backward_last = h_n[-1]  # last layer, backward direction
+        return torch.cat(
+            [forward_last, backward_last], dim=-1
+        )  # (batch, hidden_size*2)
 
 
 # ── CNN Feature Extractor ───────────────────────────────────────────────
@@ -89,23 +93,31 @@ class EmotionCNNFeatureExtractor(nn.Module):
             64, 128, num_blocks=2, first_stride=(2, 1), dropout=dropout
         )
 
-    def _make_stage(self, in_channels, out_channels, num_blocks, first_stride=(1, 1), dropout=0.1):
+    def _make_stage(
+        self, in_channels, out_channels, num_blocks, first_stride=(1, 1), dropout=0.1
+    ):
         layers = []
         downsample = None
 
         if first_stride != (1, 1) or in_channels != out_channels:
             downsample = nn.Sequential(
                 nn.Conv2d(
-                    in_channels, out_channels,
-                    kernel_size=1, stride=first_stride, bias=False,
+                    in_channels,
+                    out_channels,
+                    kernel_size=1,
+                    stride=first_stride,
+                    bias=False,
                 ),
                 nn.BatchNorm2d(out_channels),
             )
 
         layers.append(
             ResidualBlock(
-                in_channels, out_channels,
-                stride=first_stride, downsample=downsample, dropout=dropout,
+                in_channels,
+                out_channels,
+                stride=first_stride,
+                downsample=downsample,
+                dropout=dropout,
             )
         )
         for _ in range(1, num_blocks):
@@ -115,14 +127,14 @@ class EmotionCNNFeatureExtractor(nn.Module):
 
     def forward(self, x):
         # x: (B, 1, 40, 130)
-        x = self.stage1(x)   # → (B, 32, 20, 130)
-        x = self.stage2(x)   # → (B, 64, 10, 65)
-        x = self.stage3(x)   # → (B, 128, 5, 65)
+        x = self.stage1(x)  # → (B, 32, 20, 130)
+        x = self.stage2(x)  # → (B, 64, 10, 65)
+        x = self.stage3(x)  # → (B, 128, 5, 65)
 
         batch_size, channels, freq, time = x.size()
         # Reshape to (batch, time_steps, channels * freq) so the LSTM
         # receives one feature vector per time step.
-        x = x.permute(0, 3, 1, 2)                      # (B, T, C, F)
+        x = x.permute(0, 3, 1, 2)  # (B, T, C, F)
         x = x.contiguous().view(batch_size, time, channels * freq)  # (B, T, C*F)
         return x
 
@@ -168,8 +180,8 @@ class EmotionModel(nn.Module):
 
     def forward(self, x):
         # x: (batch, 1, n_mels, time_steps) — mel spectrogram
-        x = self.cnn(x)          # → (batch, T', features)
-        x = self.lstm(x)         # → (batch, hidden_size * 2)
-        x = self.classifier(x)   # → (batch, num_classes)
+        x = self.cnn(x)  # → (batch, T', features)
+        x = self.lstm(x)  # → (batch, hidden_size * 2)
+        x = self.classifier(x)  # → (batch, num_classes)
         x = torch.log_softmax(x, dim=-1)
         return x

@@ -45,7 +45,7 @@ def load_cnn_lstm_model(ckpt_path: str | None) -> torch.nn.Module:
     model = EmotionModel(num_classes=NUM_CLASSES)
     if ckpt_path and Path(ckpt_path).exists():
         from train import EmotionLitModel
-        lit = EmotionLitModel.load_from_checkpoint(ckpt_path, map_location="cpu")
+        lit = EmotionLitModel.load_from_checkpoint(ckpt_path, map_location="cpu", strict=False)
         model = lit.model
         print(f"Loaded CNN-LSTM checkpoint: {ckpt_path}")
     else:
@@ -60,7 +60,7 @@ def load_wav2vec2_model(ckpt_path: str | None) -> torch.nn.Module:
     model = Wav2Vec2EmotionModel(num_classes=NUM_CLASSES)
     if ckpt_path and Path(ckpt_path).exists():
         from wav2vec2_train import Wav2Vec2LitModel
-        lit = Wav2Vec2LitModel.load_from_checkpoint(ckpt_path, map_location="cpu")
+        lit = Wav2Vec2LitModel.load_from_checkpoint(ckpt_path, map_location="cpu", strict=False)
         model = lit.model
         print(f"Loaded Wav2Vec2 checkpoint: {ckpt_path}")
     else:
@@ -165,9 +165,12 @@ def build_demo(model, predict_fn, use_confusion: bool = True):
         fig.savefig(buf, format="png", dpi=120)
         plt.close(fig)
         buf.seek(0)
+        
+        from PIL import Image
+        img = Image.open(buf)
 
         label_dict = {EMOTION_LABELS[i]: float(probs[i]) for i in range(NUM_CLASSES)}
-        return label_dict, buf
+        return label_dict, img
 
     def update_confusion(true_label_str: str):
         """Record one confusion matrix cell when the user provides the true label."""
@@ -195,7 +198,8 @@ def build_demo(model, predict_fn, use_confusion: bool = True):
         fig.savefig(buf, format="png", dpi=120)
         plt.close(fig)
         buf.seek(0)
-        return buf
+        from PIL import Image
+        return Image.open(buf)
 
     def reset_confusion():
         confusion_matrix[:] = 0

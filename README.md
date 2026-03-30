@@ -4,20 +4,20 @@ A comprehensive system for detecting emotions in speech audio using a **CNN-LSTM
 
 ## Overview
 
-| Component | Description |
-|-----------|-------------|
-| **Feature extraction** | Mel-spectrogram + 13 MFCCs + delta-MFCCs + Chromagram (4-channel tensor) |
-| **CNN-LSTM model** | Residual CNN feature extractor → Bidirectional LSTM → softmax |
-| **Wav2Vec2 model** | `facebook/wav2vec2-base` fine-tuned with a linear emotion head |
-| **Training** | PyTorch Lightning · class-weighted NLLLoss · macro F1 · MLflow + TensorBoard |
-| **Deployment** | Gradio interactive demo · FastAPI REST endpoint |
+| Component              | Description                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| **Feature extraction** | Mel-spectrogram + 13 MFCCs + delta-MFCCs + Chromagram (4-channel tensor)     |
+| **CNN-LSTM model**     | Residual CNN feature extractor → Bidirectional LSTM → softmax                |
+| **Wav2Vec2 model**     | `facebook/wav2vec2-base` fine-tuned with a linear emotion head               |
+| **Training**           | PyTorch Lightning · class-weighted NLLLoss · macro F1 · MLflow + TensorBoard |
+| **Deployment**         | Gradio interactive demo · FastAPI REST endpoint                              |
 
 ## Datasets
 
-| Dataset | Speakers | Emotions | Files |
-|---------|----------|----------|-------|
-| [RAVDESS](https://zenodo.org/record/1188976) | 24 actors | 8 | ~1,440 |
-| [TESS](https://tspace.library.utoronto.ca/handle/1807/24487) | 2 actors (F) | 7 | ~2,800 |
+| Dataset                                                      | Speakers     | Emotions | Files  |
+| ------------------------------------------------------------ | ------------ | -------- | ------ |
+| [RAVDESS](https://zenodo.org/record/1188976)                 | 24 actors    | 8        | ~1,440 |
+| [TESS](https://tspace.library.utoronto.ca/handle/1807/24487) | 2 actors (F) | 7        | ~2,800 |
 
 **8 emotion classes:** neutral · calm · happy · sad · angry · fearful · disgust · surprised
 
@@ -44,6 +44,7 @@ pip install -r requirements.txt
 ```
 
 Download datasets and place them as:
+
 ```
 data/
 ├── ravdess/
@@ -71,16 +72,16 @@ uv run python src/train.py \
 
 **Key CLI arguments:**
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--ravdess_dir` | `data/ravdess` | RAVDESS root directory |
-| `--tess_dir` | `data/toronto` | TESS root directory |
-| `--max_epochs` | 30 | Training epochs |
-| `--batch_size` | 32 | Mini-batch size |
-| `--lr` | 1e-3 | Learning rate |
-| `--n_mels` | 40 | Mel filter banks |
-| `--accelerator` | `auto` | `cpu` / `gpu` / `auto` |
-| `--mlflow_tracking_uri` | `mlruns` | MLflow tracking server URI |
+| Argument                | Default        | Description                |
+| ----------------------- | -------------- | -------------------------- |
+| `--ravdess_dir`         | `data/ravdess` | RAVDESS root directory     |
+| `--tess_dir`            | `data/toronto` | TESS root directory        |
+| `--max_epochs`          | 30             | Training epochs            |
+| `--batch_size`          | 32             | Mini-batch size            |
+| `--lr`                  | 1e-3           | Learning rate              |
+| `--n_mels`              | 40             | Mel filter banks           |
+| `--accelerator`         | `auto`         | `cpu` / `gpu` / `auto`     |
+| `--mlflow_tracking_uri` | `mlruns`       | MLflow tracking server URI |
 
 ### Fine-tune Wav2Vec2
 
@@ -109,6 +110,7 @@ uv run python src/app.py --share
 ```
 
 The Gradio UI opens at **http://localhost:7860** and provides:
+
 - Microphone recording or file upload
 - Real-time probability bar chart per emotion
 - Cumulative confusion matrix with ground-truth labelling
@@ -174,12 +176,12 @@ audio-project/
 
 Each audio clip is transformed into a **4-channel tensor (C=4, H=n_mels, W=T)**:
 
-| Channel | Feature | Shape |
-|---------|---------|-------|
-| 0 | Mel-spectrogram (dB) | `(n_mels, T)` |
-| 1 | 13 MFCCs (resized) | `(n_mels, T)` |
-| 2 | Delta-MFCCs (resized) | `(n_mels, T)` |
-| 3 | Chromagram (resized) | `(n_mels, T)` |
+| Channel | Feature               | Shape         |
+| ------- | --------------------- | ------------- |
+| 0       | Mel-spectrogram (dB)  | `(n_mels, T)` |
+| 1       | 13 MFCCs (resized)    | `(n_mels, T)` |
+| 2       | Delta-MFCCs (resized) | `(n_mels, T)` |
+| 3       | Chromagram (resized)  | `(n_mels, T)` |
 
 MFCC and chromagram maps are resized to `n_mels` rows via bilinear interpolation.
 
@@ -209,41 +211,27 @@ log_softmax  →  loss: NLLLoss (class-weighted)
 - **Logging:** TensorBoard (`logs/`) + MLflow (`mlruns/`)
 
 View TensorBoard:
+
 ```bash
 tensorboard --logdir logs/
 ```
 
 View MLflow:
+
 ```bash
 mlflow ui --port 5000
 ```
 
 ## Notebooks
 
-| Notebook | Content |
-|----------|---------|
-| [`01_eda.ipynb`](notebooks/01_eda.ipynb) | Class distributions, audio durations, waveforms, spectrograms |
-| [`02_features.ipynb`](notebooks/02_features.ipynb) | MFCC, delta, chroma extraction and 4-channel visualisation |
-| [`03_evaluation.ipynb`](notebooks/03_evaluation.ipynb) | Confusion matrix, per-class F1, classification report |
-
-## Uploading to Hugging Face Hub
-
-```python
-from huggingface_hub import HfApi
-api = HfApi()
-api.upload_folder(
-    folder_path="logs/checkpoints",
-    repo_id="<your-username>/speech-emotion-recognition",
-    repo_type="model",
-)
-```
+| Notebook                                               | Content                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------- |
+| [`01_eda.ipynb`](notebooks/01_eda.ipynb)               | Class distributions, audio durations, waveforms, spectrograms |
+| [`02_features.ipynb`](notebooks/02_features.ipynb)     | MFCC, delta, chroma extraction and 4-channel visualisation    |
+| [`03_evaluation.ipynb`](notebooks/03_evaluation.ipynb) | Confusion matrix, per-class F1, classification report         |
 
 ## Requirements
 
 See [`pyproject.toml`](pyproject.toml) or [`requirements.txt`](requirements.txt) for the full dependency list.
 
 Core dependencies: `torch`, `torchaudio`, `pytorch-lightning`, `librosa`, `transformers`, `gradio`, `fastapi`, `mlflow`.
-
-## License
-
-MIT

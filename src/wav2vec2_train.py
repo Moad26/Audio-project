@@ -12,6 +12,12 @@ Usage:
 
 from __future__ import annotations
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 import argparse
 import random
 from collections import Counter
